@@ -22,10 +22,12 @@ start:
         mov	ah,02h		; номер функции DOS "вывод символа"
 cloop:  
 	cmp	cx,1
-	je	final
-	cmp	
+	je	continue_loop
 	call	WRITE_HEX	;печатаем код символа
+	;cmp	dl,0Ah
+	;je	increment
 	int	21h
+increment:
         inc	dl		; и за ним сам следующий символ
 	
 	push	dx		;откидываем значение регистра dx в стек
@@ -63,7 +65,7 @@ WRITE_HEX endp
 WRITE_HEX_DIGIT proc
 	push	dx		;Сохраняем значение регистра dx
 	cmp	dl,0Ah		;если значение dl >9
-	jae 	hex_letter	;то печатаем цифру
+	jae 	hex_letter	;то печатаем букву
 	add	dl,30h		;добавляем 30h позиций, чтобы вывести цифру
 	jmp	write_digit
 hex_letter:
@@ -74,7 +76,5 @@ write_digit:
 	pop	dx		;восстанавливаем регистр
 	ret
 WRITE_HEX_DIGIT endp
-final:
-	call	WRITE_HEX
 	ret			; завершение СОМ-файла
         end	start
