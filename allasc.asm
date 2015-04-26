@@ -1,51 +1,40 @@
-TITLE ALLASC (COM)
-CODSEG SEGMENT PARA 'Code'
-	ASSUME CS:CODSEG, DS:CODSEG, SS:CODSEG, ES:NOTHING
-	ORG 100H
-BEGIN: JMP MAIN
-CTR DB 00, '$'
+        .model tiny
+        .code
+        org		100h		; начало СОМ-файла
+start:
 
-; Основная процедура:
+	mov		ax,0600h	;ah 06 (прокрутка)
+		     			;al 00 (весь экран)
+	mov		bh,07 		;нормальный атрибут (черно/белый)
+	mov 		cx,0000 	;Левая верхняя позиция
+	mov 		dx,184Fh 	;Правая нижняя позиция
+	int 		10h
 
-MAIN PROC NEAR
-	CALL B10CLR ;Очистить экран
-	CALL C10SET ;Установить курсор
-	CALL D10DISP ;Вывести символ на экран
-	RET
-MAIN ENDP
+	mov		AH,02
+	mov 		BH,00 		;экран 0
+	mov 		DX,0000		;переводим курсор в строку 00, столбец 00
+	int 		10h
 
-; Очистка экрана:
-B10CLR PROC
-	MOV AX,0600H ;ah 06 (прокрутка)
-		     ;al 00 (весь экран)
-	MOV BH,07 ;нормальный атрибут (черно/белый)
-	MOV CX,0000 ;Левая верхняя позиция
-	MOV DX,184FH ;Правая нижняя позиция
-	INT 10H
-	RET
-B10CLR ENDP
+        mov		cx,256		; вывести 256 символов
+        mov		dl,0		; первый символ - с кодом 00
+        mov		ah,2		; номер функции DOS "вывод символа"
+cloop:  int		21h		; вызов DOS
+        inc		dl		; увеличение DL на 1 - следующий символ
 
-; Установка курсора в 00,00:
-C10SET PROC
-	MOV AH,02
-	MOV BH,00 ;экран 0
-	MOV DX,0000 ;строка 00, столбец 00
-	INT 10H
-	RET
-C10SET ENDP
+	push		dx	
+	mov		dl,20h		;так мы выводим пробел после каждого символа
+	int		21h
+	pop		dx
 
-; Вывод на экран ASCII символов:
-D10DISP PROC
-	MOV CX, 256 ;256 итераций
-	LEA DX,CTR ;Адрес счетчика
-D20:
-	MOV AH,09 ;Функция вывода символа
-	INT 21H
-	INC CTR ;Увеличить счетчик
-	LOOP D20 ;Уменьшить CX,
-		 ; цикл, если не ноль
-	RET
-D10DISP ENDP
-
-CODSEG ENDS
-	END BEGIN
+        test		dl,0Fh		; если DL не кратен 16,
+        jnz		continue_loop	; продолжить цикл,
+        push		dx		; иначе: сохранить текущий символ
+        mov		dl,0Dh		; переводим каретку на в начало строки
+        int		21h
+        mov		dl,0Ah		; переводим каретку на следующую строку
+        int		21h
+        pop		dx		; восстановить текущий символ
+continue_loop:
+        loop		cloop		; продолжить цикл
+	ret				; завершение СОМ-файла
+        end		start
